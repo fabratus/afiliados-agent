@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agente de Afiliados</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        header {
+            background: #1e293b;
+            padding: 20px 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 { color: #38bdf8; font-size: 1.8em; }
+        .subtitle { color: #94a3b8; font-size: 0.9em; margin-top: 5px; }
+        
+        .header-actions { display: flex; gap: 10px; }
+        
+        .btn {
+            background: #0ea5e9;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #0284c7; }
+        .btn:disabled { background: #475569; cursor: not-allowed; }
+        .btn-secondary { background: #334155; }
+        .btn-secondary:hover { background: #475569; }
+        .btn-success { background: #10b981; }
+        .btn-success:hover { background: #059669; }
+        .btn-danger { background: #ef4444; }
+        .btn-danger:hover { background: #dc2626; }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+        }
+        .stat-value { font-size: 2em; font-weight: bold; color: #38bdf8; }
+        .stat-label { color: #94a3b8; font-size: 0.85em; margin-top: 5px; }
+        
+        .scraper-status {
+            background: #1e293b;
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-text { color: #94a3b8; }
+        .status-running { color: #fbbf24; }
+        .status-ok { color: #10b981; }
+        
+        .products-section {
+            background: #1e293b;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+        }
+        .products-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .products-title { color: #38bdf8; font-size: 1.3em; }
+        
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+        
+        .product-card {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .product-card:hover {
+            transform: translateY(-2px);
+            border-color: #38bdf8;
+        }
+        .product-card.promoted { border-color: #10b981; }
+        
+        .product-image {
+            width: 100%;
+            height: 180px;
+            object-fit: contain;
+            background: white;
+            padding: 10px;
+        }
+        .product-body { padding: 15px; flex: 1; display: flex; flex-direction: column; }
+        .product-title {
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            color: #e2e8f0;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .product-price {
+            font-size: 1.3em;
+            color: #10b981;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .product-price-original {
+            color: #64748b;
+            text-decoration: line-through;
+            font-size: 0.8em;
+            margin-left: 6px;
+        }
+        .product-commission {
+            color: #fbbf24;
+            font-size: 0.85em;
+            margin-bottom: 8px;
+        }
+        .product-meta {
+            display: flex;
+            gap: 10px;
+            font-size: 0.75em;
+            color: #94a3b8;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .product-badge {
+            display: inline-block;
+            background: #334155;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .product-badge.official { background: #0ea5e9; color: white; }
+        .product-badge.promoted { background: #10b981; color: white; }
+        
+        .product-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: auto;
+            padding-top: 10px;
+        }
+        .product-actions .btn { padding: 6px 10px; font-size: 0.75em; flex: 1; }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+        .empty-state h3 { color: #94a3b8; margin-bottom: 10px; }
+        
+        .source-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .source-mercadolivre { background: #fef3c7; color: #92400e; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>🎯 Agente de Afiliados</h1>
+                <div class="subtitle">Garimpo inteligente de produtos em marketplaces brasileiros</div>
+            </div>
+            <div class="header-actions">
+                <button id="btn-scrape-ml" class="btn" onclick="scrapeML()">
+                    🔄 Coletar do Mercado Livre
+                </button>
+                <button class="btn btn-secondary" onclick="location.reload()">
+                    ↻ Atualizar
+                </button>
+            </div>
+        </header>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.total }}</div>
+                <div class="stat-label">Total de produtos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.relevant }}</div>
+                <div class="stat-label">Relevantes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.analyzed }}</div>
+                <div class="stat-label">Analisados</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.promoted }}</div>
+                <div class="stat-label">Promovendo</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.ai_classified }}</div>
+                <div class="stat-label">Classificados IA</div>
+            </div>
+        </div>
+
+        <div class="scraper-status" id="scraper-status">
+            {% if scraper_state.running %}
+                <span class="status-running">⚡ Scraper rodando... aguarde ~3 minutos</span>
+            {% elif scraper_state.last_run %}
+                <span class="status-ok">✓ Última coleta: {{ scraper_state.last_run }}</span>
+                {% if scraper_state.last_result %}
+                    <span class="status-text">
+                        {{ scraper_state.last_result.get('new', 0) }} novos,
+                        {{ scraper_state.last_result.get('updated', 0) }} atualizados
+                    </span>
+                {% endif %}
+            {% else %}
+                <span class="status-text">⏸ Nenhuma coleta executada ainda</span>
+            {% endif %}
+        </div>
+
+        <div class="products-section">
+            <div class="products-header">
+                <div class="products-title">
+                    📦 Produtos Coletados ({{ products|length }})
+                </div>
+            </div>
+
+            {% if products %}
+            <div class="products-grid">
+                {% for p in products %}
+                <div class="product-card {% if p.promoted %}promoted{% endif %}">
+                    {% if p.image_url %}
+                    <img src="{{ p.image_url }}" class="product-image" alt="{{ p.title }}" loading="lazy">
+                    {% endif %}
+                    <div class="product-body">
+                        <div class="product-title">{{ p.title }}</div>
+                        <div>
+                            <span class="product-price">R$ {{ '%.2f'|format(p.price or 0) }}</span>
+                            {% if p.original_price and p.original_price > p.price %}
+                            <span class="product-price-original">R$ {{ '%.2f'|format(p.original_price) }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="product-commission">
+                            💰 Comissão: {{ p.commission_percent }}% = R$ {{ '%.2f'|format(p.commission_value or 0) }}
+                        </div>
+                        <div class="product-meta">
+                            <span class="source-tag source-{{ p.source }}">{{ p.source }}</span>
+                            {% if p.rating %}
+                            <span class="product-badge">⭐ {{ p.rating }}</span>
+                            {% endif %}
+                            {% if p.sales_count %}
+                            <span class="product-badge">🛒 {{ p.sales_count }}</span>
+                            {% endif %}
+                            {% if p.is_official_store %}
+                            <span class="product-badge official">Oficial</span>
+                            {% endif %}
+                            {% if p.promoted %}
+                            <span class="product-badge promoted">Promovendo</span>
+                            {% endif %}
+                        </div>
+                        <div class="product-actions">
+                            <a href="{{ p.url }}" target="_blank" class="btn btn-secondary">
+                                🔗 Ver no ML
+                            </a>
+                            {% if not p.promoted %}
+                            <button class="btn btn-success" onclick="setAffiliateUrl({{ p.id }})">
+                                ⭐ Promover
+                            </button>
+                            {% endif %}
+                            <button class="btn btn-danger" onclick="ignoreProduct({{ p.id }})">
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <h3>🔍 Nenhum produto coletado ainda</h3>
+                <p>Clique em "Coletar do Mercado Livre" no topo para começar.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        async function scrapeML() {
+            const btn = document.getElementById('btn-scrape-ml');
+            btn.disabled = true;
+            btn.textContent = '⚡ Iniciando...';
+            
+            try {
+                const resp = await fetch('/api/scrape/mercadolivre', { method: 'POST' });
+                const data = await resp.json();
+                
+                if (data.ok) {
+                    btn.textContent = '⚡ Rodando... (aguarde)';
+                    // Polling de status a cada 10s
+                    const interval = setInterval(async () => {
+                        const statusResp = await fetch('/api/scrape/status');
+                        const status = await statusResp.json();
+                        if (!status.running) {
+                            clearInterval(interval);
+                            alert('Coleta finalizada! Atualizando página...');
+                            location.reload();
+                        }
+                    }, 10000);
+                } else {
+                    alert('Erro: ' + (data.error || 'desconhecido'));
+                    btn.disabled = false;
+                    btn.textContent = '🔄 Coletar do Mercado Livre';
+                }
+            } catch (e) {
+                alert('Erro na requisição: ' + e.message);
+                btn.disabled = false;
+                btn.textContent = '🔄 Coletar do Mercado Livre';
+            }
+        }
+
+        async function setAffiliateUrl(productId) {
+            const url = prompt(
+                'Cole o link de afiliado gerado no Mercado Livre:\n\n' +
+                '(Acesse o produto no ML logado na sua conta e use o botão Gerar Link na barra superior)'
+            );
+            if (!url || !url.trim()) return;
+            
+            try {
+                const resp = await fetch(`/api/product/${productId}/affiliate_url`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ affiliate_url: url.trim() })
+                });
+                const data = await resp.json();
+                if (data.ok) {
+                    alert('✅ Link salvo! Produto marcado como promovendo.');
+                    location.reload();
+                } else {
+                    alert('Erro: ' + (data.error || 'desconhecido'));
+                }
+            } catch (e) {
+                alert('Erro: ' + e.message);
+            }
+        }
+
+        async function ignoreProduct(productId) {
+            if (!confirm('Ignorar este produto?')) return;
+            try {
+                await fetch(`/api/product/${productId}/ignore`, { method: 'POST' });
+                location.reload();
+            } catch (e) {
+                alert('Erro: ' + e.message);
+            }
+        }
+    </script>
+</body>
+</html>

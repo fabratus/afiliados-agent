@@ -135,7 +135,11 @@ def init_db():
         )
     """)
 
-    conn.commit()
+    try:
+        conn.execute("ALTER TABLE oauth_tokens ADD COLUMN status TEXT DEFAULT 'active'")
+    except Exception:
+        pass
+        conn.commit()
     conn.close()
     print("✅ Banco de dados inicializado")
 

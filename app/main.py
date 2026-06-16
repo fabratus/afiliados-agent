@@ -6,8 +6,9 @@ Porta 5001 (Freelance está na 5000)
 import os
 import logging
 import threading
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, redirect
 from app.database import init_db, get_stats, get_connection
+from app.ai.ml_auth import MLAuth, MLAuthError, MLNotAuthorizedError
 
 # Logging
 logging.basicConfig(
@@ -191,6 +192,46 @@ def get_products_for_dashboard(source=None, limit=100):
     
     return [dict(row) for row in rows]
 
+
+
+@app.route('/oauth/authorize')
+def oauth_authorize():
+    try:
+        auth = MLAuth()
+        url = auth.get_authorization_url()
+        return redirect(url)
+    except KeyError as e:
+        return jsonify({'error': 'Variavel nao configurada: %s' % e}), 500
+
+
+@app.route('/oauth/callback')
+def oauth_callback():
+    error = request.args.get('error')
+    code = request.args.get('code')
+    if error:
+        return '<h3>Erro OAuth: %s</h3><a href=/>Voltar</a>' % error, 400
+    if not code:
+        return jsonify({'error': 'code ausente'}), 400
+    try:
+        MLAuth().exchange_code_for_token(code)
+        return redirect('/?oauth=success')
+    except MLAuthError as e:
+        return '<h3>Falha na autorizacao: %s</h3><a href=/>Voltar</a>' % e, 500
+
+
+@app.route('/api/oauth/status')
+def api_oauth_status():
+    auth = MLAuth()
+    row = auth.load_token()
+    if not row:
+        return jsonify({'connected': False, 'status': 'not_authorized'})
+    return jsonify({
+        'connected': auth.is_connected(),
+        'status': row.get('status', 'unknown'),
+        'expires_at': row.get('expires_at'),
+        'user_id': row.get('user_id'),
+        'scope': row.get('scope'),
+    })
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5001))

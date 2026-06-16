@@ -200,7 +200,13 @@
                 <div class="subtitle">Garimpo inteligente de produtos em marketplaces brasileiros</div>
             </div>
             <div class="header-actions">
-                <button id="btn-scrape-ml" class="btn" onclick="scrapeML()">
+                <div id="ml-oauth-banner" style="display:none;align-items:center;gap:8px;">
+                <button class="btn" style="background:#ef4444;" onclick="window.location.href='/oauth/authorize'">
+                    Autorizar ML
+                </button>
+            </div>
+            <span id="ml-oauth-ok" style="display:none;color:#10b981;font-size:0.85em;">ML Conectado</span>
+            <button id="btn-scrape-ml" class="btn" onclick="scrapeML()">
                     🔄 Coletar do Mercado Livre
                 </button>
                 <button class="btn btn-secondary" onclick="location.reload()">
@@ -382,6 +388,19 @@
                 alert('Erro: ' + e.message);
             }
         }
+
+    async function checkMLOAuth() {
+        try {
+            const r = await fetch('/api/oauth/status');
+            const d = await r.json();
+            document.getElementById('ml-oauth-banner').style.display = d.connected ? 'none' : 'flex';
+            document.getElementById('ml-oauth-ok').style.display = d.connected ? 'inline' : 'none';
+            if (new URLSearchParams(window.location.search).get('oauth') === 'success') {
+                alert('Mercado Livre autorizado com sucesso!');
+            }
+        } catch(e) {}
+    }
+    checkMLOAuth();
     </script>
 </body>
 </html>

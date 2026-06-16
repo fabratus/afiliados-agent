@@ -42,6 +42,14 @@ class MercadoLivreScraper(BaseScraper):
         })
         self.collected_ids = set()  # evita duplicatas dentro da mesma rodada
     
+
+    def _get_auth_headers(self):
+        try:
+            from app.ai.ml_auth import MLAuth, MLNotAuthorizedError
+            token = MLAuth().get_valid_token()
+            return {'Authorization': 'Bearer %s' % token}
+        except Exception:
+            return {}
     def search_by_term(self, term, limit=20):
         """Busca produtos por palavra-chave."""
         url = f"{self.BASE_URL}/sites/MLB/search"
@@ -52,7 +60,16 @@ class MercadoLivreScraper(BaseScraper):
         }
         
         try:
-            resp = self.session.get(url, params=params, timeout=15)
+            headers = self._get_auth_headers()
+            resp = self.session.get(url, params=params, headers=headers, timeout=15)
+            if resp.status_code == 401:
+                try:
+                    from app.ai.ml_auth import MLAuth
+                    MLAuth().refresh_access_token()
+                    headers = self._get_auth_headers()
+                    resp = self.session.get(url, params=params, headers=headers, timeout=15)
+                except Exception:
+                    pass
             resp.raise_for_status()
             data = resp.json()
             results = data.get("results", [])
@@ -72,7 +89,16 @@ class MercadoLivreScraper(BaseScraper):
         }
         
         try:
-            resp = self.session.get(url, params=params, timeout=15)
+            headers = self._get_auth_headers()
+            resp = self.session.get(url, params=params, headers=headers, timeout=15)
+            if resp.status_code == 401:
+                try:
+                    from app.ai.ml_auth import MLAuth
+                    MLAuth().refresh_access_token()
+                    headers = self._get_auth_headers()
+                    resp = self.session.get(url, params=params, headers=headers, timeout=15)
+                except Exception:
+                    pass
             resp.raise_for_status()
             data = resp.json()
             results = data.get("results", [])

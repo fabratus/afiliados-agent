@@ -3,7 +3,7 @@ import logging
 import requests
 from datetime import datetime, timedelta
 from typing import Optional
-from urllib.parse import urlencode
+from urllib.parse import urlencode, quote
 from app.database import get_connection
 
 logger = logging.getLogger(__name__)
@@ -12,6 +12,7 @@ ML_AUTH_URL = 'https://auth.mercadolivre.com.br/authorization'
 ML_TOKEN_URL = 'https://api.mercadolibre.com/oauth/token'
 ML_PROVIDER = 'mercadolivre'
 TOKEN_EXPIRY_BUFFER = 300
+ML_PROXY_URL = os.getenv("ML_PROXY_URL")
 
 
 class MLAuthError(Exception):
@@ -46,7 +47,8 @@ class MLAuth:
 
     def exchange_code_for_token(self, code):
         try:
-            resp = requests.post(ML_TOKEN_URL, data={
+            _token_url = ML_PROXY_URL + "?target=" + quote(ML_TOKEN_URL, safe="") if ML_PROXY_URL else ML_TOKEN_URL
+            resp = requests.post(_token_url, data={
                 'grant_type': 'authorization_code',
                 'client_id': self.app_id,
                 'client_secret': self.client_secret,
@@ -70,7 +72,8 @@ class MLAuth:
         if not row or not row.get('refresh_token'):
             raise MLNotAuthorizedError('Sem refresh_token salvo')
         try:
-            resp = requests.post(ML_TOKEN_URL, data={
+            _token_url = ML_PROXY_URL + "?target=" + quote(ML_TOKEN_URL, safe="") if ML_PROXY_URL else ML_TOKEN_URL
+            resp = requests.post(_token_url, data={
                 'grant_type': 'refresh_token',
                 'client_id': self.app_id,
                 'client_secret': self.client_secret,
@@ -151,12 +154,15 @@ class MLAuth:
             conn.close()
 
     def is_connected(self):
-        row = self.load_token()
-        if row is None:
+        try:
+            self.get_valid_token()
+            return True
+        except (MLNotAuthorizedError, MLRefreshFailedError):
             return False
-        if row.get('status') == 'invalid':
-            return False
-        return True
+        except MLAuthError:
+            # Erro de rede - nao derrubar botao por instabilidade temporaria
+            row = self.load_token()
+            return row is not None and row.get('status') != 'invalid'
 
     def _mark_invalid(self):
         updated_at = datetime.utcnow().isoformat()

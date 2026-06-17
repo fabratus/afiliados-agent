@@ -1,12 +1,11 @@
-version: '3.8'
+version: "3.8"
 
 services:
   afiliados-agent:
     container_name: afiliados-agent
     build: .
     restart: unless-stopped
-    ports:
-      - "5001:5001"
+    network_mode: host
     volumes:
       - ./app:/app/app
       - ./data:/app/data
@@ -15,9 +14,3 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - TZ=America/Sao_Paulo
-    networks:
-      - afiliados-net
-
-networks:
-  afiliados-net:
-    driver: bridge

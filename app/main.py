@@ -233,6 +233,31 @@ def api_oauth_status():
         'scope': row.get('scope'),
     })
 
+
+@app.route("/api/scrape/shopee", methods=["POST"])
+def scrape_shopee():
+    """Dispara scraper do Shopee em thread separada."""
+    if _scraper_state["running"]:
+        return jsonify({"status": "error", "error": "Já existe um scraper rodando"}), 409
+    def _run():
+        try:
+            _scraper_state["running"] = True
+            from app.scrapers.shopee import run_shopee_scraper
+            result = run_shopee_scraper()
+            _scraper_state["last_result"] = result
+        except Exception as e:
+            logger.error(f"Erro no scraper Shopee: {e}")
+            _scraper_state["last_result"] = {"error": str(e)}
+        finally:
+            _scraper_state["running"] = False
+            from datetime import datetime
+            _scraper_state["last_run"] = datetime.now().isoformat()
+    import threading
+    thread = threading.Thread(target=_run, daemon=True, name="shopee-scraper")
+    thread.start()
+    return jsonify({"status": "started", "scraper": "shopee"})
+
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5001))
     print(f"🚀 Afiliados Agent iniciando na porta {port}")

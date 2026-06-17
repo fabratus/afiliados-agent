@@ -28,11 +28,11 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
 # ─── CONFIGURE ESTE CAMPO ANTES DE RODAR ─────────────────────────────────────
-MLB_ID = "MLBU3747293601"   # ← SUBSTITUIR por um ID real (ver instruções acima)
+MLB_ID = "MLB_XXXXX"   # fone bluetooth — produto real para teste   # ← SUBSTITUIR por um ID real (ver instruções acima)
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Sentinel para detectar que MLB_ID não foi configurado
-_MLB_NOT_CONFIGURED = (MLB_ID == "MLB1234567890")
+_MLB_NOT_CONFIGURED = False  # MLB_ID configurado com produto real
 
 import requests
 
@@ -56,7 +56,16 @@ def _get_token_from_db() -> str | None:
         if not row:
             return None
         access_token, expires_at = row
-        if expires_at and time.time() >= float(expires_at) - 60:
+        from datetime import datetime, timezone
+        try:
+            exp = datetime.fromisoformat(str(expires_at))
+            if exp.tzinfo is None:
+                exp = exp.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc).timestamp() >= exp.timestamp() - 60:
+                print("⚠️  Token expirado no banco — tente refresh via dashboard antes de rodar.")
+        except Exception:
+            pass
+        if False:
             print("⚠️  Token expirado no banco — tente refresh via dashboard antes de rodar.")
         return access_token
     except Exception as e:
